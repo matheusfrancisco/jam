@@ -114,7 +114,7 @@ JamModuleRef JamLLVMCreateModule(const char *name, JamContextRef ctx) {
 void JamLLVMDisposeModule(JamModuleRef mod) { delete UNWRAP_MODULE(mod); }
 
 void JamLLVMSetTargetTriple(JamModuleRef mod, const char *triple) {
-	UNWRAP_MODULE(mod)->setTargetTriple(triple);
+	UNWRAP_MODULE(mod)->setTargetTriple(llvm::Triple(triple));
 }
 
 void JamLLVMSetDataLayout(JamModuleRef mod, JamTargetMachineRef tm) {
@@ -199,7 +199,7 @@ JamTypeRef JamLLVMVoidType(JamContextRef ctx) {
 
 JamTypeRef JamLLVMPointerType(JamTypeRef elementType, unsigned addressSpace) {
 	return WRAP_TYPE(
-	    llvm::PointerType::get(UNWRAP_TYPE(elementType), addressSpace));
+	    llvm::PointerType::get(UNWRAP_TYPE(elementType)->getContext(), addressSpace));
 }
 
 JamTypeRef JamLLVMStructType(JamContextRef ctx, JamTypeRef *elementTypes,
@@ -792,7 +792,7 @@ JamLLVMCreateTargetMachine(const char *triple, const char *cpu,
                            JamOptLevel optLevel, JamLTO lto) {
 	std::string error;
 	const llvm::Target *target =
-	    llvm::TargetRegistry::lookupTarget(triple, error);
+	    llvm::TargetRegistry::lookupTarget(llvm::Triple(triple), error);
 	if (!target) { return nullptr; }
 
 	llvm::TargetOptions opt;
@@ -835,7 +835,7 @@ JamLLVMCreateTargetMachine(const char *triple, const char *cpu,
 	}
 
 	llvm::TargetMachine *tm = target->createTargetMachine(
-	    triple, cpu ? cpu : "generic", features ? features : "", opt, rm,
+        llvm::Triple(triple), cpu ? cpu : "generic", features ? features : "", opt, rm,
 	    std::nullopt, cgOpt);
 	if (!tm) { return nullptr; }
 
